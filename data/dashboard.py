@@ -3,7 +3,16 @@ import plotly.graph_objects as go
 import pandas as pd
 
 # Load DataFrame
-df = pd.read_csv('university_test_data.csv')
+# df = pd.read_csv('university_test_data.csv')
+raw_df = pd.read_csv('university.csv')
+df2 = raw_df[['name', 'university', 'ชื่อหลักสูตร',
+       'ชื่อหลักสูตรภาษาอังกฤษ', 'ประเภทหลักสูตร', 'วิทยาเขต', 'ค่าใช้จ่าย',
+       'อัตราการสำเร็จการศึกษา', 'Unnamed: 9', 'รอบ 1 Portfolio',
+       'รอบ 2 Quota', 'รอบ 3 Admission', 'รอบ 4 Direct Admission', 'สาขาวิชา',
+       'อัตราการได้งานทำ', 'ค่ามัธยฐานเงินเดือน']]
+print(df2.head(3))
+df = df2.rename(columns={"university": "University", "ชื่อหลักสูตรภาษาอังกฤษ": "Course"})
+print(df.head(3))
 
 # Initialize the Dash app
 app = Dash(__name__, external_stylesheets=['https://codepen.io/chriddyp/pen/bWLwgP.css'])
