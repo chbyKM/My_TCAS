@@ -1,0 +1,16 @@
+[tool.poetry]
+name = "tcas"
+version = "0.1.0"
+description = ""
+authors = ["Panisara Sangtong <oujisama1212@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+dash = "^2.17.1"
+pandas = "^2.2.2"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
