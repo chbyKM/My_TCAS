@@ -19,7 +19,8 @@ def extract_and_sum(filtered_df, selected_cols):
     round_3 = [extract_number(str(s)) for s in filtered_df[selected_cols[2]].tolist()]
     round_4 = [extract_number(str(s)) for s in filtered_df[selected_cols[3]].tolist()]
 
-    total = [f'รับ {a+b+c+d} คน' for a,b,c,d in zip(round_1, round_2, round_3, round_4)]
+    # total = [f'รับ {a+b+c+d} คน' for a,b,c,d in zip(round_1, round_2, round_3, round_4)]
+    total = [f'{a+b+c+d}' for a,b,c,d in zip(round_1, round_2, round_3, round_4)]
     return total
 
 app = Dash(__name__)
@@ -51,6 +52,9 @@ for i in range(len(cleaned_df)):
 
 last_column = cleaned_df.pop('จังหวัด')
 cleaned_df.insert(2, 'จังหวัด', last_column) 
+
+with open('assets/thailand_provinces.geojson', 'r', encoding='utf-8') as f:
+    geojson = json.load(f)
 
 app.layout = html.Div([
     # Main header
@@ -106,13 +110,13 @@ app.layout = html.Div([
             'textAlign': 'center',
         },
     ),
-    # dcc.Graph(id='map-content', style={'width': '100%', 'height': '600px'})
+    dcc.Graph(id='map-content', style={'width': '100%', 'height': '600px'})
 ])
 
 @app.callback(
     [
-        Output('data_table', 'data')
-    #  Output('map-content', 'figure')
+        Output('data_table', 'data'),
+        Output('map-content', 'figure')
     ],
     [
         Input('dropdown-selection', 'value')
@@ -121,10 +125,37 @@ app.layout = html.Div([
 
 def update_table_and_map(selected_university):
     filtered_university_df = cleaned_df[cleaned_df["มหาวิทยาลัย"] == selected_university]
-    # filtered_location_df = merged_df[merged_df["มหาวิทยาลัย"] == selected_university]
-    # modify map figure
-
-    return filtered_university_df.to_dict('records')
+    fig = px.choropleth(
+        cleaned_df,
+        geojson=geojson,
+        locations='จังหวัด',
+        featureidkey="properties.name",
+        color='ทั้งหมด',
+        color_continuous_scale="YlOrRd",
+        range_color=[cleaned_df['ทั้งหมด'].min(), cleaned_df['ทั้งหมด'].max()],
+        labels={'ทั้งหมด':'จำนวนรับทั้งหมด'},
+        projection="mercator",
+    )
+    
+    fig.update_geos(fitbounds="locations", visible=True)
+    
+    fig.update_layout(
+        title={
+            'text': "แผนที่มหาวิทยาลัย",
+            'font': {'size':20, 'weight':'normal'},
+            'pad':{'t':-40},
+            'y': 0.9,
+            'x': 0.5,
+            'xanchor': 'center',
+            'yanchor': 'top'
+        },
+        coloraxis_colorbar={
+            'title': 'จำนวนรับทั้งหมด (คน)',
+            'x': 1.05,
+            'len': 0.8
+        },
+    )
+    return filtered_university_df.to_dict('records'), fig
 
 if __name__ == "__main__":
     app.run(debug=True)
