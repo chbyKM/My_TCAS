@@ -70,7 +70,7 @@ app.layout = html.Div([
             dcc.Dropdown(
                 id='dropdown-selection',
                 options=[{'label': university, 'value': university} for university in filtered_df['มหาวิทยาลัย'].unique()],
-                value='จุฬาลงกรณ์มหาวิทยาลัย'  # default
+                value='มหาวิทยาลัยสงขลานครินทร์ หาดใหญ่'  # default
             ),
         ],
         style={'margin-bottom': '30px'}
