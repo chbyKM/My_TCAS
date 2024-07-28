@@ -48,7 +48,6 @@ for i in range(len(cleaned_df)):
         cleaned_df.loc[[i], ['จังหวัด']] = ""
     else:
         cleaned_df.loc[[i], ['จังหวัด']] = uni_dict[cleaned_df.loc[[i], ['มหาวิทยาลัย']].iloc[0, 0]]
-
 last_column = cleaned_df.pop('จังหวัด')
 cleaned_df.insert(2, 'จังหวัด', last_column) 
 

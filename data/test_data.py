@@ -24,5 +24,6 @@ for i in range(len(df1)):
     else:
         df1.loc[[i], ['จังหวัด']] = uni_dict[df1.loc[[i], ['มหาวิทยาลัย']].iloc[0, 0]]
 
-print(f"# new df1 -> len = {len(df1)}, unique uni = {len(df1['มหาวิทยาลัย'].unique())}")
-print(df1.head(3))
+# print(f"# new df1 -> len = {len(df1)}, unique uni = {len(df1['มหาวิทยาลัย'].unique())}")
+# print(df1.head(3))
+
