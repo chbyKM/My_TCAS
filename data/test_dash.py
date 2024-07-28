@@ -94,14 +94,9 @@ app.layout = html.Div([
 def update_table_map_and_bar_chart(selected_university):
     # Filter the data for the selected university
     filtered_university_df = cleaned_df[cleaned_df["มหาวิทยาลัย"] == selected_university]
-    
-    # Aggregate intake data for all universities
-    total_by_round = {
-        'รอบ 1 Portfolio': cleaned_df['รอบ 1 Portfolio'].apply(extract_number).sum(),
-        'รอบ 2 Quota': cleaned_df['รอบ 2 Quota'].apply(extract_number).sum(),
-        'รอบ 3 Admission': cleaned_df['รอบ 3 Admission'].apply(extract_number).sum(),
-        'รอบ 4 Direct Admission': cleaned_df['รอบ 4 Direct Admission'].apply(extract_number).sum()
-    }
+
+    # Aggregate intake data for the selected university
+    aggregated_data = filtered_university_df[selected_cols].applymap(extract_number).sum()
 
     # Create choropleth map
     fig_map = px.choropleth(
@@ -133,17 +128,17 @@ def update_table_map_and_bar_chart(selected_university):
         },
     )
 
-    # Create bar chart with total intake data
+    # Create bar chart with aggregated intake data for the selected university
     fig_bar = go.Figure()
     for round_name in selected_cols:
         fig_bar.add_trace(go.Bar(
             x=[round_name],
-            y=[total_by_round[round_name]],
+            y=[aggregated_data[round_name]],
             name=round_name
         ))
     
     fig_bar.update_layout(
-        title=f"จำนวนที่รับรวมในแต่ละรอบ (ทั้งหมด)",
+        title=f"จำนวนที่รับรวมในแต่ละรอบของ {selected_university}",
         xaxis_title="รอบการรับ",
         yaxis_title="จำนวนที่รับ",
         barmode='group'
