@@ -26,23 +26,31 @@ app = Dash(__name__)
 
 data_file = "university.csv"
 df = pd.read_csv(data_file)
-# filtered_df = df[['name', 'university', 'ชื่อหลักสูตร',
-#        'ชื่อหลักสูตรภาษาอังกฤษ', 'ประเภทหลักสูตร', 'วิทยาเขต', 
-#        'ค่าใช้จ่าย', 'อัตราการสำเร็จการศึกษา', 'รอบ 1 Portfolio',
-#        'รอบ 2 Quota', 'รอบ 3 Admission', 'รอบ 4 Direct Admission']]
 selected_cols = ['รอบ 1 Portfolio', 'รอบ 2 Quota', 'รอบ 3 Admission', 'รอบ 4 Direct Admission']
 df['ทั้งหมด'] = extract_and_sum(df, selected_cols)
 
 filtered_df = df[['ชื่อหลักสูตร', 'university', 'ค่าใช้จ่าย',
        'ทั้งหมด', 'รอบ 1 Portfolio', 'รอบ 2 Quota', 
        'รอบ 3 Admission', 'รอบ 4 Direct Admission']]
-filtered_df = filtered_df.rename(columns={"university": "มหาวิทยาลัย"})
+cleaned_df = filtered_df.rename(columns={"university": "มหาวิทยาลัย"})
 
-display_cols = ['ชื่อหลักสูตร', 'ค่าใช้จ่าย',
-       'ทั้งหมด', 'รอบ 1 Portfolio', 'รอบ 2 Quota', 
-       'รอบ 3 Admission', 'รอบ 4 Direct Admission']
-# with open('thailand_provinces.geojson', 'r', encoding='utf-8') as f:
-#     geojson = json.load(f)
+# display_cols = ['ชื่อหลักสูตร', 'ค่าใช้จ่าย',
+#        'ทั้งหมด', 'รอบ 1 Portfolio', 'รอบ 2 Quota', 
+#        'รอบ 3 Admission', 'รอบ 4 Direct Admission']
+
+location_df = pd.read_csv('assets/university_location_clean.csv')
+location_df = location_df.rename(columns={"ชื่อสถานศึกษา": "มหาวิทยาลัย"})
+
+uni_dict = {uni: province for uni, province in zip(location_df['มหาวิทยาลัย'].tolist(), location_df['จังหวัด'].tolist())}
+uni_dict_keys = list(uni_dict.keys())
+for i in range(len(cleaned_df)):
+    if cleaned_df.loc[[i], ['มหาวิทยาลัย']].iloc[0, 0] not in uni_dict_keys:
+        cleaned_df.loc[[i], ['จังหวัด']] = ""
+    else:
+        cleaned_df.loc[[i], ['จังหวัด']] = uni_dict[cleaned_df.loc[[i], ['มหาวิทยาลัย']].iloc[0, 0]]
+
+last_column = cleaned_df.pop('จังหวัด')
+cleaned_df.insert(2, 'จังหวัด', last_column) 
 
 app.layout = html.Div([
     # Main header
@@ -69,7 +77,7 @@ app.layout = html.Div([
         [
             dcc.Dropdown(
                 id='dropdown-selection',
-                options=[{'label': university, 'value': university} for university in filtered_df['มหาวิทยาลัย'].unique()],
+                options=[{'label': university, 'value': university} for university in cleaned_df['มหาวิทยาลัย'].unique()],
                 value='มหาวิทยาลัยสงขลานครินทร์ หาดใหญ่'  # default
             ),
         ],
@@ -79,13 +87,12 @@ app.layout = html.Div([
     dash_table.DataTable(
         id='data_table',
         columns=[
-            {"name": col, "id": col} for col in filtered_df[display_cols].columns
+            {"name": col, "id": col} for col in cleaned_df.columns
         ],
-        data=filtered_df.to_dict('records'),
+        data=cleaned_df.to_dict('records'),
         page_size=5,
         style_cell={
             'textAlign': 'left',
-            # 'maxWidth': 0
         },
         style_data={
             'whiteSpace': 'normal',
@@ -95,21 +102,28 @@ app.layout = html.Div([
         style_table={'overflowX': 'auto'},
         style_header={
             'backgroundColor': 'rgb(50,50,50)',
-            'color' : 'white',
+            'color': 'white',
             'textAlign': 'center',
-            # 'fontWeight': 'bold'
         },
     ),
+    # dcc.Graph(id='map-content', style={'width': '100%', 'height': '600px'})
 ])
 
 @app.callback(
-    Output('data_table', 'data'),
-    [Input('dropdown-selection', 'value')]
+    [
+        Output('data_table', 'data')
+    #  Output('map-content', 'figure')
+    ],
+    [
+        Input('dropdown-selection', 'value')
+    ]
 )
 
-def update_table(selected_university):
-    filtered_university_df = filtered_df[filtered_df["มหาวิทยาลัย"] == selected_university]
-    # filtered_university_df = filtered_university_df[display_cols]
+def update_table_and_map(selected_university):
+    filtered_university_df = cleaned_df[cleaned_df["มหาวิทยาลัย"] == selected_university]
+    # filtered_location_df = merged_df[merged_df["มหาวิทยาลัย"] == selected_university]
+    # modify map figure
+
     return filtered_university_df.to_dict('records')
 
 if __name__ == "__main__":
