@@ -62,15 +62,14 @@ cleaned_df = pd.merge(cleaned_df, uni_df, on='มหาวิทยาลัย'
 with urlopen('https://raw.githubusercontent.com/apisit/thailand.json/master/thailandWithName.json') as response:
     thai_province = json.load(response)
 
-# Create choropleth map
+# Initial choropleth map
 fig_map = px.choropleth_mapbox(
     cleaned_df,
     geojson=thai_province,
     locations='จังหวัด',
-    featureidkey="properties.PROVINCE_NAME",  # Adjust according to your GeoJSON properties
+    featureidkey="properties.PROVINCE_NAME",
     color='จังหวัด',
-    color_continuous_scale="Viridis",
-    range_color=[0, 100],  # Adjust based on your data
+    color_discrete_sequence=["lightgrey"],  # Default color
     mapbox_style="carto-positron",
     center={"lat": 15.87, "lon": 100.9925},
     zoom=5,
@@ -143,7 +142,7 @@ def update_content(selected_university):
     # Prepare data for the updated map
     selected_province = filtered_university_df['จังหวัด'].iloc[0]
     map_data = cleaned_df.copy()
-    map_data['highlight'] = map_data['จังหวัด'].apply(lambda x: 1 if x == selected_province else 0)
+    map_data['highlight'] = map_data['จังหวัด'].apply(lambda x: 'selected' if x == selected_province else 'other')
     
     fig_map = px.choropleth_mapbox(
         map_data,
@@ -151,8 +150,7 @@ def update_content(selected_university):
         locations='จังหวัด',
         featureidkey="properties.PROVINCE_NAME",
         color='highlight',
-        color_continuous_scale=["gray", "red"],  # Highlight selected province
-        range_color=[0, 1],
+        color_discrete_map={'selected': 'red', 'other': 'lightgrey'},  # Highlight selected province
         mapbox_style="carto-positron",
         center={"lat": 15.87, "lon": 100.9925},
         zoom=5,
