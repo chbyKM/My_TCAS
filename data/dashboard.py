@@ -1,8 +1,6 @@
 from dash import Dash, dcc, html, Input, Output, callback, dash_table
-import plotly.express as px
-import pandas as pd
 import plotly.graph_objects as go
-import json
+import pandas as pd
 import re
 
 def extract_number(s):
@@ -18,8 +16,8 @@ def extract_and_sum(filtered_df, selected_cols):
     round_3 = [extract_number(str(s)) for s in filtered_df[selected_cols[2]].tolist()]
     round_4 = [extract_number(str(s)) for s in filtered_df[selected_cols[3]].tolist()]
 
-    total = [f'รับ {a+b+c+d} คน' for a,b,c,d in zip(round_1, round_2, round_3, round_4)]
-    return total
+    total = [a + b + c + d for a, b, c, d in zip(round_1, round_2, round_3, round_4)]
+    return [f'รับ {x} คน' for x in total]
 
 app = Dash(__name__)
 
@@ -37,15 +35,9 @@ location_df = pd.read_csv('assets/university_location_clean.csv')
 location_df = location_df.rename(columns={"ชื่อสถานศึกษา": "มหาวิทยาลัย"})
 
 uni_dict = {uni: province for uni, province in zip(location_df['มหาวิทยาลัย'].tolist(), location_df['จังหวัด'].tolist())}
-uni_dict_keys = list(uni_dict.keys())
-for i in range(len(cleaned_df)):
-    if cleaned_df.loc[[i], ['มหาวิทยาลัย']].iloc[0, 0] not in uni_dict_keys:
-        cleaned_df.loc[[i], ['จังหวัด']] = ""
-    else:
-        cleaned_df.loc[[i], ['จังหวัด']] = uni_dict[cleaned_df.loc[[i], ['มหาวิทยาลัย']].iloc[0, 0]]
 
-last_column = cleaned_df.pop('จังหวัด')
-cleaned_df.insert(2, 'จังหวัด', last_column) 
+# Assign province to universities in cleaned_df
+cleaned_df['จังหวัด'] = cleaned_df['มหาวิทยาลัย'].map(uni_dict).fillna("")
 
 app.layout = html.Div([
     # Main header
@@ -112,6 +104,9 @@ app.layout = html.Div([
 )
 def update_content(selected_university):
     filtered_university_df = cleaned_df[cleaned_df["มหาวิทยาลัย"] == selected_university]
+    
+    if filtered_university_df.empty:
+        return [], go.Figure()  # Return an empty figure if no data is found
     
     # Prepare data for the bar chart
     rounds = ['รอบ 1 Portfolio', 'รอบ 2 Quota', 'รอบ 3 Admission', 'รอบ 4 Direct Admission']
