@@ -102,13 +102,14 @@ def update_table_map_and_bar_chart(selected_university):
     # Create Scattermapbox map
     fig_map = go.Figure()
 
-    # Add markers for each university location
+    # Add markers for the selected university location
+    university_location = location_df[location_df['มหาวิทยาลัย'] == selected_university]
     fig_map.add_trace(go.Scattermapbox(
-        lat=location_df['latitude'].tolist(),
-        lon=location_df['longitude'].tolist(),
+        lat=[university_location['latitude'].values[0]],
+        lon=[university_location['longitude'].values[0]],
         mode='markers',
-        marker=dict(size=10, color='red', opacity=0.7),
-        text=location_df['มหาวิทยาลัย'].tolist(),
+        marker=dict(size=12, color='red', opacity=0.9),
+        text=selected_university,
         hoverinfo='text'
     ))
 
@@ -120,11 +121,11 @@ def update_table_map_and_bar_chart(selected_university):
             style="open-street-map",  # Use Open Street Map or choose another style
             bearing=0,
             center=dict(
-                lat=14.11,  # Center latitude
-                lon=100.35  # Center longitude
+                lat=university_location['latitude'].values[0],  # Center latitude of selected university
+                lon=university_location['longitude'].values[0]  # Center longitude of selected university
             ),
             pitch=0,
-            zoom=5  # Adjust zoom level as needed
+            zoom=10  # Adjust zoom level as needed
         ),
         title={
             'text': "ตำแหน่งของมหาวิทยาลัย",
@@ -155,5 +156,6 @@ def update_table_map_and_bar_chart(selected_university):
 
     # Return the table data, map figure, and bar chart figure
     return filtered_university_df.to_dict('records'), fig_map, fig_bar
+
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run_server(debug=True)
