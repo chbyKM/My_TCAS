@@ -5,7 +5,6 @@ import plotly.graph_objects as go
 import json
 import re
 
-
 def extract_number(s):
     number = re.findall(r'\d+', s)
     if number:
@@ -33,10 +32,6 @@ filtered_df = df[['ชื่อหลักสูตร', 'university', 'ค่�
        'ทั้งหมด', 'รอบ 1 Portfolio', 'รอบ 2 Quota', 
        'รอบ 3 Admission', 'รอบ 4 Direct Admission']]
 cleaned_df = filtered_df.rename(columns={"university": "มหาวิทยาลัย"})
-
-# display_cols = ['ชื่อหลักสูตร', 'ค่าใช้จ่าย',
-#        'ทั้งหมด', 'รอบ 1 Portfolio', 'รอบ 2 Quota', 
-#        'รอบ 3 Admission', 'รอบ 4 Direct Admission']
 
 location_df = pd.read_csv('assets/university_location_clean.csv')
 location_df = location_df.rename(columns={"ชื่อสถานศึกษา": "มหาวิทยาลัย"})
@@ -106,20 +101,36 @@ app.layout = html.Div([
             'textAlign': 'center',
         },
     ),
-    # dcc.Graph(id='map-content', style={'width': '100%', 'height': '600px'})
+    # graph
+    dcc.Graph(id='bar_chart')
 ])
 
 @app.callback(
-    Output('data_table', 'data'),
+    [Output('data_table', 'data'),
+     Output('bar_chart', 'figure')],
     Input('dropdown-selection', 'value')
 )
-
-def update_table(selected_university):
+def update_content(selected_university):
     filtered_university_df = cleaned_df[cleaned_df["มหาวิทยาลัย"] == selected_university]
-    # filtered_location_df = merged_df[merged_df["มหาวิทยาลัย"] == selected_university]
-    # modify map figure
-
-    return filtered_university_df.to_dict('records')
+    
+    # Prepare data for the bar chart
+    rounds = ['รอบ 1 Portfolio', 'รอบ 2 Quota', 'รอบ 3 Admission', 'รอบ 4 Direct Admission']
+    numbers = [extract_number(filtered_university_df[round].iloc[0]) for round in rounds]
+    
+    # Create the bar chart
+    fig = go.Figure(data=[go.Bar(
+        x=rounds,
+        y=numbers,
+        marker_color='indianred'
+    )])
+    fig.update_layout(
+        title=f'จำนวนที่รับในแต่ละรอบสำหรับ {selected_university}',
+        xaxis_title='รอบ',
+        yaxis_title='จำนวนที่รับ',
+        template='plotly_dark'
+    )
+    
+    return filtered_university_df.to_dict('records'), fig
 
 if __name__ == "__main__":
     app.run(debug=True)
