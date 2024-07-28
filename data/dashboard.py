@@ -1,69 +1,125 @@
-from dash import dcc, html, Dash, callback, Input, Output
-import plotly.graph_objects as go
+from dash import Dash, dcc, html, Input, Output, callback, dash_table
+import plotly.express as px
 import pandas as pd
+import plotly.graph_objects as go
+import json
+import re
 
-# Load DataFrame
-# df = pd.read_csv('university_test_data.csv')
-raw_df = pd.read_csv('university.csv')
-df2 = raw_df[['name', 'university', 'ชื่อหลักสูตร',
-       'ชื่อหลักสูตรภาษาอังกฤษ', 'ประเภทหลักสูตร', 'วิทยาเขต', 'ค่าใช้จ่าย',
-       'อัตราการสำเร็จการศึกษา', 'Unnamed: 9', 'รอบ 1 Portfolio',
-       'รอบ 2 Quota', 'รอบ 3 Admission', 'รอบ 4 Direct Admission', 'สาขาวิชา',
-       'อัตราการได้งานทำ', 'ค่ามัธยฐานเงินเดือน']]
-print(df2.head(3))
-df = df2.rename(columns={"university": "University", "ชื่อหลักสูตรภาษาอังกฤษ": "Course"})
-print(df.head(3))
 
-# Initialize the Dash app
-app = Dash(__name__, external_stylesheets=['https://codepen.io/chriddyp/pen/bWLwgP.css'])
+def extract_number(s):
+    number = re.findall(r'\d+', s)
+    if number:
+        return int(number[0])
+    else:
+        return 0
 
-#################### CHARTS #####################################
-def create_filtered_table(University="University", Course="Course"):
-    filtered_df = df[(df.University == University) & (df.Course == Course)]
-    
-    if filtered_df.empty:
-        return go.Figure()  # Return an empty figure if no data matches the filter
+def extract_and_sum(filtered_df, selected_cols):
+    round_1 = [extract_number(str(s)) for s in filtered_df[selected_cols[0]].tolist()]
+    round_2 = [extract_number(str(s)) for s in filtered_df[selected_cols[1]].tolist()]
+    round_3 = [extract_number(str(s)) for s in filtered_df[selected_cols[2]].tolist()]
+    round_4 = [extract_number(str(s)) for s in filtered_df[selected_cols[3]].tolist()]
 
-    fig = go.Figure(data=[go.Table(
-        header=dict(values=filtered_df.columns, align='left'),
-        cells=dict(values=[filtered_df[col].tolist() for col in filtered_df.columns], align='left'))
-    ])
-    fig.update_layout(paper_bgcolor="#e5ecf6", margin={"t":0, "l":0, "r":0, "b":0}, height=700)
-    return fig
+    total = [f'รับ {a+b+c+d} คน' for a,b,c,d in zip(round_1, round_2, round_3, round_4)]
+    return total
 
-##################### WIDGETS ####################################
-# Create dropdown options
-university_options = [{'label': uni, 'value': uni} for uni in df.University.unique()]
-course_options = [{'label': course, 'value': course} for course in df.Course.unique()]
+app = Dash(__name__)
 
-University_drop = dcc.Dropdown(id="university_drop", options=university_options, value=df.University.iloc[0], clearable=False)
-Course_drop = dcc.Dropdown(id="course_drop", options=course_options, value=df.Course.iloc[0], clearable=False)
+data_file = "university.csv"
+df = pd.read_csv(data_file)
+selected_cols = ['รอบ 1 Portfolio', 'รอบ 2 Quota', 'รอบ 3 Admission', 'รอบ 4 Direct Admission']
+df['ทั้งหมด'] = extract_and_sum(df, selected_cols)
 
-##################### APP LAYOUT ####################################
+filtered_df = df[['ชื่อหลักสูตร', 'university', 'ค่าใช้จ่าย',
+       'ทั้งหมด', 'รอบ 1 Portfolio', 'รอบ 2 Quota', 
+       'รอบ 3 Admission', 'รอบ 4 Direct Admission']]
+cleaned_df = filtered_df.rename(columns={"university": "มหาวิทยาลัย"})
+
+# display_cols = ['ชื่อหลักสูตร', 'ค่าใช้จ่าย',
+#        'ทั้งหมด', 'รอบ 1 Portfolio', 'รอบ 2 Quota', 
+#        'รอบ 3 Admission', 'รอบ 4 Direct Admission']
+
+location_df = pd.read_csv('assets/university_location_clean.csv')
+location_df = location_df.rename(columns={"ชื่อสถานศึกษา": "มหาวิทยาลัย"})
+
+uni_dict = {uni: province for uni, province in zip(location_df['มหาวิทยาลัย'].tolist(), location_df['จังหวัด'].tolist())}
+uni_dict_keys = list(uni_dict.keys())
+for i in range(len(cleaned_df)):
+    if cleaned_df.loc[[i], ['มหาวิทยาลัย']].iloc[0, 0] not in uni_dict_keys:
+        cleaned_df.loc[[i], ['จังหวัด']] = ""
+    else:
+        cleaned_df.loc[[i], ['จังหวัด']] = uni_dict[cleaned_df.loc[[i], ['มหาวิทยาลัย']].iloc[0, 0]]
+
+last_column = cleaned_df.pop('จังหวัด')
+cleaned_df.insert(2, 'จังหวัด', last_column) 
+
 app.layout = html.Div([
-    html.Div([
-        html.H1("My TCAS Dashboard", className="text-center fw-bold m-2"),
-        html.Br(),
-        dcc.Tabs([
-            dcc.Tab([
-                html.Br(),
-                html.Div([
-                    "University: ", University_drop, html.Br(),
-                    "Course: ", Course_drop, html.Br(),
-                    dcc.Graph(id="table")  # This is for the table
-                ])
-            ], label="Detail")
-        ])
-    ], className="col-8 mx-auto"),
-], style={"background-color": "#e5ecf6", "height": "100vh"})
+    # Main header
+    html.H1(
+        "My TCAS Dashboard (หลักสูตรวิศวกรรม)", 
+        style={
+            'textAlign': 'center', 
+            'margin-top': '50px',
+            'margin-bottom': '20px'
+        },
+    ),
+    # header of dropdown
+    html.Div(
+        [
+            html.Label(
+                "มหาวิทยาลัย",
+                style={'font-weight':'bold'}
+            ),
+        ],
+        style={'margin-bottom': '10px'}
+    ),
+    # dropdown
+    html.Div(
+        [
+            dcc.Dropdown(
+                id='dropdown-selection',
+                options=[{'label': university, 'value': university} for university in cleaned_df['มหาวิทยาลัย'].unique()],
+                value='มหาวิทยาลัยสงขลานครินทร์ หาดใหญ่'  # default
+            ),
+        ],
+        style={'margin-bottom': '30px'}
+    ),
+    # table
+    dash_table.DataTable(
+        id='data_table',
+        columns=[
+            {"name": col, "id": col} for col in cleaned_df.columns
+        ],
+        data=cleaned_df.to_dict('records'),
+        page_size=5,
+        style_cell={
+            'textAlign': 'left',
+        },
+        style_data={
+            'whiteSpace': 'normal',
+            'height': '50px',
+            'lineHeight': 'auto'
+        },
+        style_table={'overflowX': 'auto'},
+        style_header={
+            'backgroundColor': 'rgb(50,50,50)',
+            'color': 'white',
+            'textAlign': 'center',
+        },
+    ),
+    # dcc.Graph(id='map-content', style={'width': '100%', 'height': '600px'})
+])
 
-##################### CALLBACKS ####################################
-@callback(
-    Output("table", "figure"),
-    [Input("university_drop", "value"), Input("course_drop", "value")]
+@app.callback(
+    Output('data_table', 'data'),
+    Input('dropdown-selection', 'value')
 )
-def update_table(University, Course):
-    return create_filtered_table(University, Course)
+
+def update_table(selected_university):
+    filtered_university_df = cleaned_df[cleaned_df["มหาวิทยาลัย"] == selected_university]
+    # filtered_location_df = merged_df[merged_df["มหาวิทยาลัย"] == selected_university]
+    # modify map figure
+
+    return filtered_university_df.to_dict('records')
 
 if __name__ == "__main__":
     app.run(debug=True)
