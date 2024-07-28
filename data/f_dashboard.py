@@ -4,20 +4,39 @@ import pandas as pd
 import os
 import plotly.graph_objects as go
 import json
+import re
 
+
+def extract_number(s):
+    number = re.findall(r'\d+', s)
+    if number:
+        return int(number[0])
+    else:
+        return 0
+
+def extract_and_sum(filtered_df, selected_cols):
+    round_1 = [extract_number(str(s)) for s in filtered_df[selected_cols[0]].tolist()]
+    round_2 = [extract_number(str(s)) for s in filtered_df[selected_cols[1]].tolist()]
+    round_3 = [extract_number(str(s)) for s in filtered_df[selected_cols[2]].tolist()]
+    round_4 = [extract_number(str(s)) for s in filtered_df[selected_cols[3]].tolist()]
+
+    total = [f'รับ {a+b+c+d} คน' for a,b,c,d in zip(round_1, round_2, round_3, round_4)]
+    return total
 
 app = Dash(__name__)
 
 data_file = "university.csv"
 df = pd.read_csv(data_file)
 # filtered_df = df[['name', 'university', 'ชื่อหลักสูตร',
-#        'ชื่อหลักสูตรภาษาอังกฤษ', 'ประเภทหลักสูตร', 'วิทยาเขต', 'ค่าใช้จ่าย',
-#        'อัตราการสำเร็จการศึกษา', 'รอบ 1 Portfolio',
+#        'ชื่อหลักสูตรภาษาอังกฤษ', 'ประเภทหลักสูตร', 'วิทยาเขต', 
+#        'ค่าใช้จ่าย', 'อัตราการสำเร็จการศึกษา', 'รอบ 1 Portfolio',
 #        'รอบ 2 Quota', 'รอบ 3 Admission', 'รอบ 4 Direct Admission']]
-filtered_df = df[['name', 'university',
-       'วิทยาเขต', 'ค่าใช้จ่าย',
-       'รอบ 1 Portfolio',
-       'รอบ 2 Quota', 'รอบ 3 Admission', 'รอบ 4 Direct Admission']]
+selected_cols = ['รอบ 1 Portfolio', 'รอบ 2 Quota', 'รอบ 3 Admission', 'รอบ 4 Direct Admission']
+df['ทั้งหมด'] = extract_and_sum(df, selected_cols)
+
+filtered_df = df[['name', 'university', 'วิทยาเขต', 'ค่าใช้จ่าย',
+       'ทั้งหมด', 'รอบ 1 Portfolio', 'รอบ 2 Quota', 
+       'รอบ 3 Admission', 'รอบ 4 Direct Admission']]
 filtered_df = filtered_df.rename(columns={"name": "ชื่อหลักสูตรภาษาไทย", "university": "มหาวิทยาลัย"})
 
 # with open('thailand_provinces.geojson', 'r', encoding='utf-8') as f:
@@ -26,7 +45,7 @@ filtered_df = filtered_df.rename(columns={"name": "ชื่อหลักส�
 app.layout = html.Div([
     # Main header
     html.H1(
-        "My TCAS Dashboard", 
+        "My TCAS Dashboard (หลักสูตรวิศวกรรม)", 
         style={
             'textAlign': 'center', 
             'margin-top': '50px',
