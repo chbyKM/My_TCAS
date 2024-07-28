@@ -98,10 +98,22 @@ def update_table_map_and_bar_chart(selected_university):
     # Aggregate intake data for the selected university
     aggregated_data = filtered_university_df[selected_cols].applymap(extract_number).sum()
 
+    # Get the province for the selected university
+    selected_province = filtered_university_df['จังหวัด'].values[0]
+
+    # Filter geojson to show only the selected province
+    if selected_province:
+        geojson_filtered = {
+            "type": "FeatureCollection",
+            "features": [feature for feature in geojson['features'] if feature['properties']['name'] == selected_province]
+        }
+    else:
+        geojson_filtered = geojson  # Show all if no valid province is found
+
     # Create choropleth map
     fig_map = px.choropleth(
         cleaned_df,
-        geojson=geojson,
+        geojson=geojson_filtered,
         locations='จังหวัด',
         featureidkey="properties.name",
         color='ทั้งหมด',
@@ -110,6 +122,8 @@ def update_table_map_and_bar_chart(selected_university):
         labels={'ทั้งหมด':'จำนวนรับทั้งหมด'},
         projection="mercator",
     )
+
+    # Update the map to show only the selected province
     fig_map.update_geos(fitbounds="locations", visible=True)
     fig_map.update_layout(
         title={
