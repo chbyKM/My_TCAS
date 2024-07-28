@@ -1,10 +1,8 @@
 from dash import Dash, dcc, html, Input, Output, dash_table
-import plotly.express as px
 import plotly.graph_objects as go
 import pandas as pd
 import json
 import re
-
 
 def extract_number(s):
     """Extract the first number from a string."""
@@ -72,6 +70,8 @@ app.layout = html.Div([
         )],
         style={'margin-bottom': '30px'}
     ),
+    # Display the number of courses dynamically
+    html.Div(id='course-count', style={'margin-bottom': '30px', 'font-size': '18px'}),
     dash_table.DataTable(
         id='data_table',
         columns=[{"name": col, "id": col} for col in cleaned_df.columns],
@@ -89,7 +89,8 @@ app.layout = html.Div([
 @app.callback(
     [Output('data_table', 'data'),
      Output('map-content', 'figure'),
-     Output('bar-chart', 'figure')],
+     Output('bar-chart', 'figure'),
+     Output('course-count', 'children')],  # Output for course count
     [Input('dropdown-selection', 'value')]
 )
 def update_table_map_and_bar_chart(selected_university):
@@ -154,8 +155,11 @@ def update_table_map_and_bar_chart(selected_university):
         barmode='group'
     )
 
-    # Return the table data, map figure, and bar chart figure
-    return filtered_university_df.to_dict('records'), fig_map, fig_bar
+    # Calculate number of courses
+    num_courses = filtered_university_df.shape[0]
+
+    # Return the table data, map figure, bar chart figure, and course count
+    return filtered_university_df.to_dict('records'), fig_map, fig_bar, f"จำนวนหลักสูตรทั้งหมด: {num_courses} หลักสูตร"
 
 if __name__ == "__main__":
     app.run_server(debug=True)
