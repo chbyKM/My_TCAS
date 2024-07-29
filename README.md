@@ -9,4 +9,4 @@
 current directory should be My_TCAS, then
 #### >> cd data
 #### >> poetry run python dashboard.py
-you will get web dashboard through link after message 'Dash is running on <link>'
+you will get web dashboard through link after message 'Dash is running on'
