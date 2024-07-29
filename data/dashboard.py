@@ -59,8 +59,8 @@ app.layout = html.Div([
         style={'textAlign': 'center', 'margin-top': '50px', 'margin-bottom': '20px'}
     ),
     html.Div(
-        [html.Label("มหาวิทยาลัย", style={'font-weight':'bold'})],
-        style={'margin-bottom': '10px'}
+        [html.Label("มหาวิทยาลัย", style={'font-size':'20px', 'font-weight':'bold'})],
+        style={'margin-bottom': '20px'}
     ),
     html.Div(
         [dcc.Dropdown(
@@ -71,7 +71,7 @@ app.layout = html.Div([
         style={'margin-bottom': '30px'}
     ),
     # Display the number of courses dynamically
-    html.Div(id='course-count', style={'margin-bottom': '30px', 'font-size': '18px'}),
+    html.Div(id='course-count', style={'margin-bottom': '30px', 'font-size': '19px', 'font-weight':'bold'}),
     dash_table.DataTable(
         id='data_table',
         columns=[{"name": col, "id": col} for col in cleaned_df.columns],
@@ -98,7 +98,7 @@ def update_table_map_and_bar_chart(selected_university):
     filtered_university_df = cleaned_df[cleaned_df["มหาวิทยาลัย"] == selected_university]
 
     # Aggregate intake data for the selected university
-    aggregated_data = filtered_university_df[selected_cols].applymap(extract_number).sum()
+    aggregated_data = filtered_university_df[selected_cols].map(extract_number).sum()
 
     # Create Scattermapbox map
     fig_map = go.Figure()
@@ -109,7 +109,7 @@ def update_table_map_and_bar_chart(selected_university):
         lat=[university_location['latitude'].values[0]],
         lon=[university_location['longitude'].values[0]],
         mode='markers',
-        marker=dict(size=12, color='red', opacity=0.9),
+        marker=dict(size=12, color='rgb(255,0,0)', opacity=0.9),
         text=selected_university,
         hoverinfo='text'
     ))
@@ -129,9 +129,9 @@ def update_table_map_and_bar_chart(selected_university):
             zoom=10  # Adjust zoom level as needed
         ),
         title={
-            'text': "ตำแหน่งของมหาวิทยาลัย",
+            'text': f"ตำแหน่งของ {selected_university}",
             'font': {'size':20, 'weight':'normal'},
-            'pad':{'t':-40},
+            'pad':{'t':-20},
             'y': 0.9,
             'x': 0.5,
             'xanchor': 'center',
@@ -149,17 +149,26 @@ def update_table_map_and_bar_chart(selected_university):
         ))
     
     fig_bar.update_layout(
-        title=f"จำนวนที่รับรวมในแต่ละรอบของ {selected_university}",
+        # title=f"จำนวนที่รับรวมในแต่ละรอบของ {selected_university}",
         xaxis_title="รอบการรับ",
-        yaxis_title="จำนวนที่รับ",
-        barmode='group'
+        yaxis_title="จำนวนที่รับ (คน)",
+        barmode='group',
+        title={
+            'text': f"จำนวนที่รับรวมในแต่ละรอบของ {selected_university}",
+            'font': {'size':20, 'weight':'normal'},
+            'pad':{'t':-10},
+            'y': 0.9,
+            'x': 0.5,
+            'xanchor': 'center',
+            'yanchor': 'top'
+        }
     )
 
     # Calculate number of courses
     num_courses = filtered_university_df.shape[0]
 
     # Return the table data, map figure, bar chart figure, and course count
-    return filtered_university_df.to_dict('records'), fig_map, fig_bar, f"จำนวนหลักสูตรทั้งหมด: {num_courses} หลักสูตร"
+    return filtered_university_df.to_dict('records'), fig_map, fig_bar, f"จำนวนหลักสูตรทั้งหมด : {num_courses} หลักสูตร"
 
 if __name__ == "__main__":
     app.run_server(debug=True)
